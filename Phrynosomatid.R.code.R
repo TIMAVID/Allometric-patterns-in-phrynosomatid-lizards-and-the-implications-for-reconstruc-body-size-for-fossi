@@ -1,0 +1,291 @@
+#READING IN THE DATA---------------
+library(curl)
+f2 <- curl("https://raw.githubusercontent.com/TIMAVID/The-utility-of-evolutionary-allometries-in-estimating-body-sizes-of-phrynosomatid-lizards/master/Phrynosomatid_Measurements.csv")
+Lizard_Measurements <- read.csv(f2, header = TRUE, sep = ",", stringsAsFactors = TRUE) # this is a matrix of measured specimens 
+head(Lizard_Measurements)
+
+f3 <- curl("https://raw.githubusercontent.com/TIMAVID/The-utility-of-evolutionary-allometries-in-estimating-body-sizes-of-phrynosomatid-lizards/master/Sceloporus_Repeated_Measurements.csv")
+Lizard_Repeated_Measurements <- read.csv(f3, header = TRUE, sep = ",", stringsAsFactors = TRUE) # this is a matrix of repeatedly measured specimens  
+head(Lizard_Repeated_Measurements)
+
+#FILTERING THE DATA TO CREATE DATASETS ------------
+Phrynosomatids <- filter(Lizard_Measurements,grepl('Sceloporus|Cophosaurus|Urosaurus|Uta|Uma|Callisaurus|Phrynosoma|Petrosaurus',Specimen))
+non_S.occident_phrynos <- filter(Phrynosomatids,!grepl('Sceloporus occidentalis',Specimen))
+Sceloporus_occidental <- filter(Phrynosomatids, grepl('Sceloporus occidentalis',Specimen))
+non_S.occidentalis.Scelop <- filter(non_S.occident_phrynos, grepl('Sceloporus',Specimen))
+non_Scelop_phrynos <- filter(Phrynosomatids,!grepl('Sceloporus',Specimen))
+Sceloporus <- filter(Phrynosomatids,grepl('Sceloporus',Specimen))
+
+
+# NEW Bones function TO CREATE LINEAR MODELS------------
+varlist <- names(Lizard_Measurements)[2:16] #all the different measurements
+
+bones.lm<-function(variables,data){
+  require(ggplot2)
+  require(gridExtra)
+  figs<-lapply(variables, function(x) {
+    ggplot(data = data, 
+           aes(log(SVL), get(x))) + geom_point()+ ggtitle(x)+ theme_classic()+ ylab("log(Measurement)")})
+  do.call(grid.arrange, c(figs, ncol=3, top = deparse(substitute(data))))
+  
+  models <- lapply(variables, function(x) { #function to perform linear regression on all measurements for each dataset
+    lm(substitute(log(SVL) ~ log(i), list(i = as.name(x))), data = data)
+  })
+  names(models) <- variables
+  (sum <- (lapply(models, summary)))
+  b<-(lapply(sum, function (x)x$coefficients[1]))
+  m<-(lapply(sum, function (x)x$coefficients[2]))
+  R<-(lapply(sum, function (x)x$adj.r.squared))
+  P<-(lapply(sum, function (x)x$coefficients[2,4])) #may need to p.adjust
+  out<-list(m,b,R,P,models)
+  names(out)<-c("slope","Y-intercept","adj.R-squared","P-value","models")
+  out <- do.call(rbind, out)
+  out <- t(out)
+  out <- as.data.frame(out)
+  return(out)
+}
+
+
+# NEW estimating SVL function-------------
+estimate_SVL <- function(lm, data #need to check specific columns [,2:16] are ones to estimate from
+) #function to estimate SVL and calculate difference between actual and estimated SVL
+{
+  t<- t(lm)
+  t <- as.data.frame(t)
+  slopes <-as.vector(t[1,])
+  intercepts <- as.vector(t[2,])
+  estimates <- mapply(function(m,b,data){{(exp(as.numeric(m)*
+                                                 log(data) + as.numeric(b)))}}, 
+                      data= data[,2:16], m=slopes, b=intercepts)
+  diff <- estimates - data$SVL
+  percentdiff <- (abs(estimates - data$SVL)/data$SVL)*100
+  data<-list(estimates,data$SVL,diff,percentdiff, data$Specimen, data$species, data$genus)
+  names(data)<-c("Estimated_SVL","SVL","Difference","Percentage difference", "Specimen", "Species", "Genus")
+  return((data))
+}
+
+
+
+## ALL LINEAR REGRESSION MODELS USING S. OCCIDENTALIS DATASET--------------------
+Sceloporus_occidental_lm <-bones.lm(varlist,Sceloporus_occidental) #liner models of all measurements
+
+
+#lm(Sceloporus occidentalis ) -predict> non-S. occidentalis Sceloporus------------
+
+non.occi.sceloporus_estimates <- estimate_SVL(Sceloporus_occidental_lm, non_S.occidentalis.Scelop)
+
+#lm(Sceloporus occidentalis) -predict> non-S. occidentalis phrynosomatids------------
+
+non_S.occident_phrynos_estimates <- estimate_SVL(Sceloporus_occidental_lm, non_S.occident_phrynos)
+
+
+## ALL LINEAR REGRESSION MODELS USING SCELOPORUS DATASET--------------------
+Sceloporus_lm <-bones.lm(varlist,Sceloporus) #liner models of all measurements
+
+#lm(Sceloporus) -predict> non-Sceloporus phrynosomatids------------
+
+non_Scelop_phrynos_estimates <- estimate_SVL(Sceloporus_lm, non_Scelop_phrynos)
+
+
+## ALL LINEAR REGRESSION MODELS USING non-S.OCCIDENTALIS Sceloporus DATASET--------------------
+non_S.occidentalis.Scelop_lm <-bones.lm(varlist,non_S.occidentalis.Scelop) #liner models of all measurements
+
+#lm(non-S. occidentalis Sceloporus) -predict> Sceloporus occidentalis------------
+
+Sceloporus_occidental_estimates <- estimate_SVL(non_S.occidentalis.Scelop_lm, Sceloporus_occidental)
+
+
+## ALL LINEAR REGRESSION MODELS USING non-Sceloporus phrynosomatids DATASET--------------------
+non_Scelop_phrynos_lm <-bones.lm(varlist,non_Scelop_phrynos) #liner models of all measurements
+
+#lm(non-Sceloporus phrynosomatids) -predict> Sceloporus------------
+
+Sceloporus_estimates <- estimate_SVL(non_Scelop_phrynos_lm, Sceloporus)
+
+
+## ALL LINEAR REGRESSION MODELS USING non-S.occidentalis phrynosomatids DATASET--------------------
+non_S.occident_phrynos_lm <-bones.lm(varlist,non_S.occident_phrynos) #liner models of all measurements
+
+#lm(non-S. occidentalis phrynosomatids) -predict> Sceloporus occidentalis------------
+
+Sceloporus_occidental_estimates2 <- estimate_SVL(non_S.occident_phrynos_lm, Sceloporus_occidental)
+
+
+
+library(Hmisc)
+#All the percent differences from estimates
+All_estimates<- llist(non.occi.sceloporus_estimates[c(4)],non_S.occident_phrynos_estimates[c(4)], non_Scelop_phrynos_estimates[c(4)], 
+                      Sceloporus_occidental_estimates[c(4)], Sceloporus_occidental_estimates2[c(4)], Sceloporus_estimates[c(4)])
+
+#FUNCTION: to plot all the percent differences-----------------------------
+plot.percent.diff<-function(data){ 
+  yo<-names(data)
+  
+  new.pp <- unlist(data,recursive=FALSE)
+  dfs <- lapply(new.pp, data.frame, stringsAsFactors = FALSE)
+  dfs <- lapply(dfs, function(x) {tibble::rownames_to_column((data.frame(t(x))),"Measurement")})
+  dfs<- lapply(dfs, function(x) {tidyr::gather(x,obs, value, 2:length(x))})
+  
+  ggBox <- function(x, name) {
+    ggplot(data = x, aes(x=Measurement, y=value)) +
+      geom_boxplot() + ggtitle(name)+
+      theme_classic()+ ylab("Percent diff") +
+      scale_x_discrete(guide = guide_axis(n.dodge=3))+
+      geom_hline(yintercept=10)+
+      geom_hline(yintercept=15)
+    #+ylim(0, 50)
+  }
+  figs<-Map(f = ggBox, dfs, yo)
+  do.call(grid.arrange, c(figs, ncol=2, top = deparse(substitute(data))))
+}
+
+
+plot.percent.diff(All_estimates)
+
+
+#Change All_estimates into a list of dataframes 
+diff.dfs <- unlist(All_estimates,recursive=FALSE)
+diff.dfs <- lapply(diff.dfs, data.frame, stringsAsFactors = FALSE)
+diff.dfs <- lapply(diff.dfs, function(x) {tibble::rownames_to_column((data.frame(t(x))),"Measurement")})
+diff.dfs<- lapply(diff.dfs, function(x) {tidyr::gather(x,obs, value, 2:length(x))})
+
+ChangeType <- function(DF){ #change Measurements to a factor
+  DF[,1] <- as.factor(DF[,1])
+  DF #return the data.frame 
+}
+diff.dfs <- lapply(diff.dfs, ChangeType) # store the returned value to df.list, thus updating your existing data.frame
+
+#FUNCTION: Relative standard deviation-------------------------------
+RSD <- function(x, na.rm = TRUE){ 
+  100*sd(x, na.rm = TRUE)/mean(x, na.rm = TRUE)
+}
+
+#FUNCTION: summaries the percent differences and return mean, median and sd-----------------------
+Diff.summ <- function(diff.data){ 
+  require(dplyr)
+  diff.data %>% group_by(Measurement) %>% summarise_at(c("value"),funs(median, mean, sd), na.rm = TRUE)
+}
+
+diff.summary <- lapply(diff.dfs, Diff.summ)
+
+diff.summary <- do.call(rbind, diff.summary)
+
+write.table(diff.summary, file = "diff summary", sep = ",", quote = FALSE, row.names = T)
+
+
+#FUNCTION: to plot all the percent difference means-------------------------------
+plot.percent.diff.mean<-function(data){ 
+  yo<-names(data)
+  
+  ggBox <- function(x, name) {
+    ggplot(data = x, aes(x=Measurement, y=mean)) +
+      geom_point() + ggtitle(name)+
+      theme_classic()+ ylab("Mean % diff") +
+      scale_x_discrete(guide = guide_axis(n.dodge=3))+
+      geom_hline(yintercept=10)+
+      geom_hline(yintercept=15) +
+      geom_errorbar(width=.1, aes(ymin=mean, ymax=mean+sd)) 
+    #+ylim(0, 50)
+  }
+  figs<-Map(f = ggBox, data, yo)
+  do.call(grid.arrange, c(figs, ncol=2, top = deparse(substitute(data))))
+}
+
+plot.percent.diff.mean(diff.summary)
+
+
+
+#FUNCTION:summaries the percent differences and return mean,sd, RSD------------------
+Diff.all.summ <- function(diff.data){ 
+  require(dplyr)
+  diff.data %>% summarise_at(c("value"),funs(mean, sd, RSD), na.rm = TRUE)
+}
+
+diff.all.summary <- lapply(diff.dfs, Diff.all.summ)
+
+out <- do.call(rbind, diff.all.summary)
+write.table(out, file = "%diff summary", sep = ",", quote = FALSE, row.names = T)
+
+
+
+
+
+# Adjusting p values using fdr---------------------------------
+lm.results <- llist(Sceloporus_lm[c(1:4)], non_Scelop_phrynos_lm[c(1:4)], non_S.occident_phrynos_lm[c(1:4)],
+                    non_S.occidentalis.Scelop_lm[c(1:4)], Sceloporus_occidental_lm[c(1:4)])
+
+
+q.values <-lapply(lm.results, function(x){
+  q <- p.adjust(unlist(x[4]),method = "fdr")
+  return(q)
+})
+
+q.values <- as.data.frame(q.values)
+
+lm.results <- unlist(lm.results,recursive=FALSE)
+lm.results <- lapply(lm.results, data.frame, stringsAsFactors = FALSE)
+lm.results <- lapply(lm.results, function(x) {tibble::rownames_to_column((data.frame(t(x))),"Measurement")})
+lm.results <- as.data.frame(lm.results)
+
+write.table(lm.results, file = "lm.results", sep = ",", quote = FALSE, row.names = F)
+write.table(q.values, file = "q.values", sep = ",", quote = FALSE, row.names = T)
+
+
+
+
+# Predicting SVL of NEW Sceloporus specimens------------------------------------------
+New_Sceloporus_to_test_Sceloporus_to_test <- read_csv("New Sceloporus to test - Sceloporus to test.csv")
+New_Sceloporus_to_test_Sceloporus_to_test <- New_Sceloporus_to_test_Sceloporus_to_test %>%
+  dplyr::rename(Specimen = Measurement,
+                'Occipital_complex_WC' = 'Occipital complex_WC',
+                'Ilium_crest_GL' = 'Ilium crest_GL')
+New_Sceloporus_to_test_Sceloporus_to_test$species <-gsub("_.*","", New_Sceloporus_to_test_Sceloporus_to_test$Specimen) #makes species column
+New_Sceloporus_to_test_Sceloporus_to_test$genus <-gsub(" .*","", New_Sceloporus_to_test_Sceloporus_to_test$Specimen) #makes species column
+
+NEWscelop.estimates <- estimate_SVL(Sceloporus_lm, New_Sceloporus_to_test_Sceloporus_to_test)
+
+
+NEW.Sceloporus_occidental <- filter(New_Sceloporus_to_test_Sceloporus_to_test, grepl('Sceloporus occidentalis',Specimen))
+NEWscelop.occidental.estimates <- estimate_SVL(Sceloporus_occidental_lm, NEW.Sceloporus_occidental)
+
+
+
+New.estimates <- llist(NEWscelop.occidental.estimates[c(4)], NEWscelop.estimates[c(4)])
+
+#Change All_estimates into a list of dataframes 
+New.estimates <- unlist(New.estimates,recursive=FALSE)
+New.estimates <- lapply(New.estimates, data.frame, stringsAsFactors = FALSE)
+New.estimates <- lapply(New.estimates, function(x) {tibble::rownames_to_column((data.frame(t(x))),"Measurement")})
+New.estimates<- lapply(New.estimates, function(x) {tidyr::gather(x,obs, value, 2:length(x))})
+
+
+New.estimates <- lapply(New.estimates, ChangeType) # store the returned value to df.list, thus updating your existing data.frame
+
+
+NEWdiff.all.summary <- lapply(New.estimates, Diff.summ)
+
+out <- do.call(rbind, NEWdiff.all.summary)
+write.table(out, file = "%NEWdiff summary", sep = ",", quote = FALSE, row.names = T)
+
+
+# Measurement error--------------------------
+library(readr)
+Lizard_Repeated_Measurements <- read_csv("Lizard Repeated Measurements.csv")
+
+Lizard_Repeated_Measurements$Specimen <- as.factor(Lizard_Repeated_Measurements$Specimen)
+
+
+RSD <- function(x){ #RELATIVE STANDARD DEVIATION
+  100*sd(x, na.rm = TRUE)/mean(x, na.rm = TRUE)
+}
+
+Measure_error <- function(data){ #summaries the percent differences and return mean and sd
+  require(dplyr)
+  dat<- data %>% group_by(Specimen) %>%
+    dplyr::summarise(across(Maxilla_LDR:Ilium_crest_GL, list(mean = mean, sd = sd, RSD = RSD)))
+}
+
+Repeat.meaures<- Measure_error(Lizard_Repeated_Measurements)
+Repeat.meaures <-data.frame(t(Repeat.meaures))
+
+write.table(Repeat.meaures, file = "Repeat.meaures", sep = ",", quote = FALSE, row.names = T)
