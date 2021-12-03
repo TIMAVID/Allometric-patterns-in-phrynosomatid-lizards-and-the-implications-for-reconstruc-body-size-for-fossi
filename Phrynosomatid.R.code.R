@@ -9,6 +9,7 @@ Lizard_Repeated_Measurements <- read.csv(f3, header = TRUE, sep = ",", stringsAs
 head(Lizard_Repeated_Measurements)
 
 #FILTERING THE DATA TO CREATE DATASETS ------------
+library(dplyr)
 Phrynosomatids <- filter(Lizard_Measurements,grepl('Sceloporus|Cophosaurus|Urosaurus|Uta|Uma|Callisaurus|Phrynosoma|Petrosaurus',Specimen))
 non_S.occident_phrynos <- filter(Phrynosomatids,!grepl('Sceloporus occidentalis',Specimen))
 Sceloporus_occidental <- filter(Phrynosomatids, grepl('Sceloporus occidentalis',Specimen))
@@ -17,7 +18,16 @@ non_Scelop_phrynos <- filter(Phrynosomatids,!grepl('Sceloporus',Specimen))
 Sceloporus <- filter(Phrynosomatids,grepl('Sceloporus',Specimen))
 
 
-# NEW Bones function TO CREATE LINEAR MODELS------------
+Sceloporus_occidental$species<-Sceloporus_occidental$species %>% fct_collapse('Sceloporus occidentalis' = c("Sceloporus occidentalis","Sceloporus occidentalis biseriatus"))
+Sceloporus$species<-Sceloporus$species %>% fct_collapse('Sceloporus occidentalis' = c("Sceloporus occidentalis","Sceloporus occidentalis biseriatus"))
+Sceloporus$species<-Sceloporus$species %>% fct_collapse('other Sceloporus' = c("Sceloporus graciosus","Sceloporus graciosus vandenburgianus","Sceloporus clarkii","Sceloporus graciosus","Sceloporus grammicus",   
+                                                                               "Sceloporus jarrovii"  ,   "Sceloporus licki"    ,    "Sceloporus magister" ,   
+                                                                               "Sceloporus olivaceous"  , "Sceloporus orcutti" ,    
+                                                                               "Sceloporus poinsetti" ,   "Sceloporus poinsettii"  , "Sceloporus undulatus"  , 
+                                                                               "Sceloporus undulatus tristichus" ,  "Sceloporus virgatus" ))
+
+
+# NEW Bones function TO CREATE LINEAR MODELS FOR PREDICTING SVL------------
 varlist <- names(Lizard_Measurements)[2:16] #all the different measurements
 
 bones.lm<-function(variables,data){
@@ -25,7 +35,7 @@ bones.lm<-function(variables,data){
   require(gridExtra)
   figs<-lapply(variables, function(x) {
     ggplot(data = data, 
-           aes(log(SVL), get(x))) + geom_point()+ ggtitle(x)+ theme_classic()+ ylab("log(Measurement)")})
+           aes(log(get(x)),log(SVL),)) + geom_point()+ ggtitle(x)+ theme_classic()+ ylab("log(Measurement)")})
   do.call(grid.arrange, c(figs, ncol=3, top = deparse(substitute(data))))
   
   models <- lapply(variables, function(x) { #function to perform linear regression on all measurements for each dataset
@@ -63,6 +73,81 @@ estimate_SVL <- function(lm, data #need to check specific columns [,2:16] are on
   names(data)<-c("Estimated_SVL","SVL","Difference","Percentage difference", "Specimen", "Species", "Genus")
   return((data))
 }
+
+# FUNCTIONS TO CREATE LINEAR MODELS FOR EXAMINING ALLOMETRY AT DIFFERENT TAXONOMIC LEVELS------------
+plot.alom.species<-function(variables,data){
+  require(ggplot2)
+  require(gridExtra)
+  figs<-lapply(variables, function(x) {
+    ggplot(data = data,
+           aes(log(SVL), log(get(x)))) + geom_point(aes(color=species))+
+      scale_colour_manual(values=cbPalette)+ggtitle(x)+
+      theme_classic(base_size = 8)+ ylab("log(Measurement)")+
+      geom_smooth(method='lm')+theme(legend.position="none")+ coord_fixed(ratio = 1)+
+      geom_abline(intercept=seq(-100, 100, 1),
+                  slope=1,
+                  colour="red",linetype='dashed')
+  })
+  do.call(grid.arrange, c(figs, ncol=5, top = deparse(substitute(data))))
+  
+  models <- lapply(variables, function(x) { #function to perform linear regression on all measurements for each dataset
+    lm(substitute(log(i) ~ log(SVL), list(i = as.name(x))), data = data)
+  })
+  names(models) <- variables
+  (sum <- (lapply(models, summary)))
+  b<-(lapply(sum, function (x)x$coefficients[1]))
+  m<-(lapply(sum, function (x)x$coefficients[2]))
+  R<-(lapply(sum, function (x)x$adj.r.squared))
+  P<-(lapply(sum, function (x)x$coefficients[2,4])) #may need to p.adjust
+  out<-list(m,b,R,P,models)
+  names(out)<-c("slope","Y-intercept","adj.R-squared","P-value","models")
+  out <- do.call(rbind, out)
+  out <- t(out)
+  out <- as.data.frame(out)
+  return(out)
+}
+cbPalette <- c("#999999", "#D55E00")
+
+plot.alom.genus<-function(variables,data){
+  require(ggplot2)
+  require(gridExtra)
+  figs<-lapply(variables, function(x) {
+    ggplot(data = data, 
+           aes(log(SVL), log(get(x)))) + geom_point(aes(color=genus))+
+      scale_colour_manual(values=cbPalette2, breaks=c("Callisaurus", "Cophosaurus", "Petrosaurus", "Phrynosoma","Sceloporus","Uma","Urosaurus","Uta"))+
+      ggtitle(x)+
+      theme_classic(base_size = 8)+ ylab("log(Measurement)")+
+      geom_smooth(method='lm')+theme(legend.position="none")+ coord_fixed(ratio = 1)+
+      geom_abline(intercept=seq(-100, 100, 1),
+                  slope=1,
+                  colour="red",linetype='dashed')
+    
+  })
+  do.call(grid.arrange, c(figs, ncol=5, top = deparse(substitute(data))))
+  
+  models <- lapply(variables, function(x) { #function to perform linear regression on all measurements for each dataset
+    lm(substitute(log(i) ~ log(SVL), list(i = as.name(x))), data = data)
+  })
+  names(models) <- variables
+  (sum <- (lapply(models, summary)))
+  b<-(lapply(sum, function (x)x$coefficients[1]))
+  m<-(lapply(sum, function (x)x$coefficients[2]))
+  R<-(lapply(sum, function (x)x$adj.r.squared))
+  P<-(lapply(sum, function (x)x$coefficients[2,4])) #may need to p.adjust
+  out<-list(m,b,R,P,models)
+  names(out)<-c("slope","Y-intercept","adj.R-squared","P-value","models")
+  out <- do.call(rbind, out)
+  out <- t(out)
+  out <- as.data.frame(out)
+  return(out)
+}
+cbPalette2 <- c("#999999", "#E69F00", "#56B4E9", "#009E73","#D55E00", "#F0E442", "#0072B2", "#CC79A7")
+
+
+
+
+
+
 
 
 
@@ -170,7 +255,7 @@ diff.summary <- lapply(diff.dfs, Diff.summ)
 
 diff.summary <- do.call(rbind, diff.summary)
 
-write.table(diff.summary, file = "diff summary", sep = ",", quote = FALSE, row.names = T)
+#write.table(diff.summary, file = "diff summary", sep = ",", quote = FALSE, row.names = T)
 
 
 #FUNCTION: to plot all the percent difference means-------------------------------
@@ -203,8 +288,8 @@ Diff.all.summ <- function(diff.data){
 
 diff.all.summary <- lapply(diff.dfs, Diff.all.summ)
 
-out <- do.call(rbind, diff.all.summary)
-write.table(out, file = "%diff summary", sep = ",", quote = FALSE, row.names = T)
+#out <- do.call(rbind, diff.all.summary)
+#write.table(out, file = "%diff summary", sep = ",", quote = FALSE, row.names = T)
 
 
 
@@ -227,8 +312,8 @@ lm.results <- lapply(lm.results, data.frame, stringsAsFactors = FALSE)
 lm.results <- lapply(lm.results, function(x) {tibble::rownames_to_column((data.frame(t(x))),"Measurement")})
 lm.results <- as.data.frame(lm.results)
 
-write.table(lm.results, file = "lm.results", sep = ",", quote = FALSE, row.names = F)
-write.table(q.values, file = "q.values", sep = ",", quote = FALSE, row.names = T)
+#write.table(lm.results, file = "lm.results", sep = ",", quote = FALSE, row.names = F)
+#write.table(q.values, file = "q.values", sep = ",", quote = FALSE, row.names = T)
 
 
 
@@ -265,7 +350,7 @@ New.estimates <- lapply(New.estimates, ChangeType) # store the returned value to
 NEWdiff.all.summary <- lapply(New.estimates, Diff.summ)
 
 out <- do.call(rbind, NEWdiff.all.summary)
-write.table(out, file = "%NEWdiff summary", sep = ",", quote = FALSE, row.names = T)
+#write.table(out, file = "%NEWdiff summary", sep = ",", quote = FALSE, row.names = T)
 
 
 # Measurement error--------------------------
@@ -288,4 +373,4 @@ Measure_error <- function(data){ #summaries the percent differences and return m
 Repeat.meaures<- Measure_error(Lizard_Repeated_Measurements)
 Repeat.meaures <-data.frame(t(Repeat.meaures))
 
-write.table(Repeat.meaures, file = "Repeat.meaures", sep = ",", quote = FALSE, row.names = T)
+#write.table(Repeat.meaures, file = "Repeat.meaures", sep = ",", quote = FALSE, row.names = T)
