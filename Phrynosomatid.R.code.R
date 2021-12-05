@@ -10,6 +10,7 @@ head(Lizard_Repeated_Measurements)
 
 #FILTERING THE DATA TO CREATE DATASETS ------------
 library(dplyr)
+library(forcats)
 Phrynosomatids <- filter(Lizard_Measurements,grepl('Sceloporus|Cophosaurus|Urosaurus|Uta|Uma|Callisaurus|Phrynosoma|Petrosaurus',Specimen))
 non_S.occident_phrynos <- filter(Phrynosomatids,!grepl('Sceloporus occidentalis',Specimen))
 Sceloporus_occidental <- filter(Phrynosomatids, grepl('Sceloporus occidentalis',Specimen))
@@ -21,6 +22,11 @@ Sceloporus <- filter(Phrynosomatids,grepl('Sceloporus',Specimen))
 Sceloporus_occidental$species<-Sceloporus_occidental$species %>% fct_collapse('Sceloporus occidentalis' = c("Sceloporus occidentalis","Sceloporus occidentalis biseriatus"))
 Sceloporus$species<-Sceloporus$species %>% fct_collapse('Sceloporus occidentalis' = c("Sceloporus occidentalis","Sceloporus occidentalis biseriatus"))
 Sceloporus$species<-Sceloporus$species %>% fct_collapse('other Sceloporus' = c("Sceloporus graciosus","Sceloporus graciosus vandenburgianus","Sceloporus clarkii","Sceloporus graciosus","Sceloporus grammicus",   
+                                                                               "Sceloporus jarrovii"  ,   "Sceloporus licki"    ,    "Sceloporus magister" ,   
+                                                                               "Sceloporus olivaceous"  , "Sceloporus orcutti" ,    
+                                                                               "Sceloporus poinsetti" ,   "Sceloporus poinsettii"  , "Sceloporus undulatus"  , 
+                                                                               "Sceloporus undulatus tristichus" ,  "Sceloporus virgatus" ))
+non_S.occidentalis.Scelop$species<-non_S.occidentalis.Scelop$species %>% fct_collapse('other Sceloporus' = c("Sceloporus graciosus","Sceloporus graciosus vandenburgianus","Sceloporus clarkii","Sceloporus graciosus","Sceloporus grammicus",   
                                                                                "Sceloporus jarrovii"  ,   "Sceloporus licki"    ,    "Sceloporus magister" ,   
                                                                                "Sceloporus olivaceous"  , "Sceloporus orcutti" ,    
                                                                                "Sceloporus poinsetti" ,   "Sceloporus poinsettii"  , "Sceloporus undulatus"  , 
@@ -144,16 +150,10 @@ plot.alom.genus<-function(variables,data){
 cbPalette2 <- c("#999999", "#E69F00", "#56B4E9", "#009E73","#D55E00", "#F0E442", "#0072B2", "#CC79A7")
 
 
-
-
-
-
-
-
-
 ## ALL LINEAR REGRESSION MODELS USING S. OCCIDENTALIS DATASET--------------------
 Sceloporus_occidental_lm <-bones.lm(varlist,Sceloporus_occidental) #liner models of all measurements
 
+Sceloporus_occidental_alom <-plot.alom.species(varlist,Sceloporus_occidental) #liner models of all measurements
 
 #lm(Sceloporus occidentalis ) -predict> non-S. occidentalis Sceloporus------------
 
@@ -167,6 +167,8 @@ non_S.occident_phrynos_estimates <- estimate_SVL(Sceloporus_occidental_lm, non_S
 ## ALL LINEAR REGRESSION MODELS USING SCELOPORUS DATASET--------------------
 Sceloporus_lm <-bones.lm(varlist,Sceloporus) #liner models of all measurements
 
+Sceloporus_alom <-plot.alom.species(varlist,Sceloporus) #liner models of all measurements
+
 #lm(Sceloporus) -predict> non-Sceloporus phrynosomatids------------
 
 non_Scelop_phrynos_estimates <- estimate_SVL(Sceloporus_lm, non_Scelop_phrynos)
@@ -174,6 +176,8 @@ non_Scelop_phrynos_estimates <- estimate_SVL(Sceloporus_lm, non_Scelop_phrynos)
 
 ## ALL LINEAR REGRESSION MODELS USING non-S.OCCIDENTALIS Sceloporus DATASET--------------------
 non_S.occidentalis.Scelop_lm <-bones.lm(varlist,non_S.occidentalis.Scelop) #liner models of all measurements
+
+non_S.occidentalis.Scelop_alom <-plot.alom.species(varlist,non_S.occidentalis.Scelop) #liner models of all measurements
 
 #lm(non-S. occidentalis Sceloporus) -predict> Sceloporus occidentalis------------
 
@@ -183,6 +187,8 @@ Sceloporus_occidental_estimates <- estimate_SVL(non_S.occidentalis.Scelop_lm, Sc
 ## ALL LINEAR REGRESSION MODELS USING non-Sceloporus phrynosomatids DATASET--------------------
 non_Scelop_phrynos_lm <-bones.lm(varlist,non_Scelop_phrynos) #liner models of all measurements
 
+non_Scelop_phrynos_alom <-plot.alom.genus(varlist,non_Scelop_phrynos) #liner models of all measurements
+
 #lm(non-Sceloporus phrynosomatids) -predict> Sceloporus------------
 
 Sceloporus_estimates <- estimate_SVL(non_Scelop_phrynos_lm, Sceloporus)
@@ -190,6 +196,8 @@ Sceloporus_estimates <- estimate_SVL(non_Scelop_phrynos_lm, Sceloporus)
 
 ## ALL LINEAR REGRESSION MODELS USING non-S.occidentalis phrynosomatids DATASET--------------------
 non_S.occident_phrynos_lm <-bones.lm(varlist,non_S.occident_phrynos) #liner models of all measurements
+
+non_S.occident_phrynos_alom <-plot.alom.genus(varlist,non_S.occident_phrynos) #liner models of all measurements
 
 #lm(non-S. occidentalis phrynosomatids) -predict> Sceloporus occidentalis------------
 
@@ -278,7 +286,33 @@ plot.percent.diff.mean<-function(data){
 
 plot.percent.diff.mean(diff.summary)
 
+#FUNCTION: to plot all the differences with color-----------------------------
+plot.diff.color<-function(data){ 
+  yo<-names(data)
+  require(purrr)
+  require(ggplot2)
+  require(data.table)
+  require(gridExtra)
+  dfs <- map(data, as.data.table)
+  dfs<- lapply(dfs, function(x) 
+  {tidyr::gather(x,Measurement, value, 
+                 Difference.Maxilla_LDR:Difference.Ilium_crest_GL)})
+  
+  ggBox <- function(x, name) {
+    ggplot(data = x, aes(x=Measurement, y=value)) +
+      geom_point(aes(color=Genus),position=position_jitter(width=.1,height=0)) + 
+      scale_colour_manual(values=cbPalette2, breaks=c("Callisaurus", "Cophosaurus", "Petrosaurus", "Phrynosoma","Sceloporus","Uma","Urosaurus","Uta"))+ ggtitle(name)+
+      ylab("Diff(Est.-Act.)") +
+      scale_x_discrete(guide = guide_axis(angle = 90)) +
+      theme_classic()
+  }
+  figs<-Map(f = ggBox, dfs, yo)
+  do.call(grid.arrange, c(figs, ncol=2, top = deparse(substitute(data))))
+}
 
+Some.diff <- llist(non_Scelop_phrynos_estimates[c(3,6,7)], non_S.occident_phrynos_estimates[c(3,6,7)])
+
+plot.diff.color(Some.diff)
 
 #FUNCTION:summaries the percent differences and return mean,sd, RSD------------------
 Diff.all.summ <- function(diff.data){ 
@@ -295,7 +329,7 @@ diff.all.summary <- lapply(diff.dfs, Diff.all.summ)
 
 
 
-# Adjusting p values using fdr---------------------------------
+# Adjusting lm p values using fdr---------------------------------
 lm.results <- llist(Sceloporus_lm[c(1:4)], non_Scelop_phrynos_lm[c(1:4)], non_S.occident_phrynos_lm[c(1:4)],
                     non_S.occidentalis.Scelop_lm[c(1:4)], Sceloporus_occidental_lm[c(1:4)])
 
@@ -316,7 +350,25 @@ lm.results <- as.data.frame(lm.results)
 #write.table(q.values, file = "q.values", sep = ",", quote = FALSE, row.names = T)
 
 
+# Adjusting alom p values using fdr---------------------------------
+alom.results <- llist(Sceloporus_alom[c(1:4)], non_Scelop_phrynos_alom[c(1:4)], non_S.occident_phrynos_alom[c(1:4)],
+                    non_S.occidentalis.Scelop_alom[c(1:4)], Sceloporus_occidental_alom[c(1:4)])
 
+
+alom_q.values <-lapply(alom.results, function(x){
+  q <- p.adjust(unlist(x[4]),method = "fdr")
+  return(q)
+})
+
+alom_q.values <- as.data.frame(alom_q.values)
+
+alom.results <- unlist(alom.results,recursive=FALSE)
+alom.results <- lapply(alom.results, data.frame, stringsAsFactors = FALSE)
+alom.results <- lapply(alom.results, function(x) {tibble::rownames_to_column((data.frame(t(x))),"Measurement")})
+alom.results <- as.data.frame(alom.results)
+
+# write.table(alom.results, file = "alom.results", sep = ",", quote = FALSE, row.names = F)
+# write.table(alom_q.values, file = "alom_q.values", sep = ",", quote = FALSE, row.names = T)
 
 # Predicting SVL of NEW Sceloporus specimens------------------------------------------
 New_Sceloporus_to_test_Sceloporus_to_test <- read_csv("New Sceloporus to test - Sceloporus to test.csv")
