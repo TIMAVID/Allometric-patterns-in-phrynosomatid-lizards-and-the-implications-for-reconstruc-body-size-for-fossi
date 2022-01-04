@@ -53,8 +53,9 @@ bones.lm<-function(variables,data){
   m<-(lapply(sum, function (x)x$coefficients[2]))
   R<-(lapply(sum, function (x)x$adj.r.squared))
   P<-(lapply(sum, function (x)x$coefficients[2,4])) #may need to p.adjust
-  out<-list(m,b,R,P,models)
-  names(out)<-c("slope","Y-intercept","adj.R-squared","P-value","models")
+  MSE <- (lapply(sum, function (x)(mean(x$residuals^2))))
+  out<-list(m,b,R,P,MSE,models)
+  names(out)<-c("slope","Y-intercept","adj.R-squared","P-value","MSE","models")
   out <- do.call(rbind, out)
   out <- t(out)
   out <- as.data.frame(out)
@@ -89,10 +90,10 @@ plot.alom.species<-function(variables,data){
            aes(log(SVL), log(get(x)))) + geom_point(aes(color=species))+
       scale_colour_manual(values=cbPalette)+ggtitle(x)+
       theme_classic(base_size = 8)+ ylab("log(Measurement)")+
-      geom_smooth(method='lm')+theme(legend.position="none")+ coord_fixed(ratio = 1)+
-      geom_abline(intercept=seq(-100, 100, 1),
-                  slope=1,
-                  colour="red",linetype='dashed')
+      geom_smooth(method='lm')+theme(legend.position="none")+ coord_fixed(ratio = 1)
+    # +geom_abline(intercept=seq(-100, 100, 1),
+    #               slope=1,
+    #               colour="red",linetype='dashed')
   })
   do.call(grid.arrange, c(figs, ncol=5, top = deparse(substitute(data))))
   
@@ -112,7 +113,7 @@ plot.alom.species<-function(variables,data){
   out <- as.data.frame(out)
   return(out)
 }
-cbPalette <- c("#999999", "#D55E00")
+cbPalette <- c("#D55E00")
 
 plot.alom.genus<-function(variables,data){
   require(ggplot2)
@@ -123,10 +124,10 @@ plot.alom.genus<-function(variables,data){
       scale_colour_manual(values=cbPalette2, breaks=c("Callisaurus", "Cophosaurus", "Petrosaurus", "Phrynosoma","Sceloporus","Uma","Urosaurus","Uta"))+
       ggtitle(x)+
       theme_classic(base_size = 8)+ ylab("log(Measurement)")+
-      geom_smooth(method='lm')+theme(legend.position="none")+ coord_fixed(ratio = 1)+
-      geom_abline(intercept=seq(-100, 100, 1),
-                  slope=1,
-                  colour="red",linetype='dashed')
+      geom_smooth(method='lm')+theme(legend.position="none")+ coord_fixed(ratio = 1)
+    # +geom_abline(intercept=seq(-100, 100, 1),
+    #               slope=1,
+    #               colour="red",linetype='dashed')
     
   })
   do.call(grid.arrange, c(figs, ncol=5, top = deparse(substitute(data))))
