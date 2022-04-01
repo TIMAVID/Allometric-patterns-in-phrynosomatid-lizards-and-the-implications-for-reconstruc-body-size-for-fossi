@@ -204,6 +204,15 @@ non_S.occident_phrynos_alom <-plot.alom.genus(varlist,non_S.occident_phrynos) #l
 
 Sceloporus_occidental_estimates2 <- estimate_SVL(non_S.occident_phrynos_lm, Sceloporus_occidental)
 
+## ALL LINEAR REGRESSION MODELS USING ALL PHRYNOSOMATID DATASET--------------------
+Phrynosomatids_lm <-bones.lm(varlist,Phrynosomatids) #liner models of all measurements
+
+Phrynosomatids_alom <-plot.alom.genus(varlist,Phrynosomatids) #liner models of all measurements
+
+#lm(Phrynosomatids) -predict> fossils------------
+
+Fossil_estimates <- estimate_SVL(Sceloporus_occidental_lm, non_S.occidentalis.Scelop)
+
 
 
 library(Hmisc)
