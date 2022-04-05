@@ -12,6 +12,8 @@ head(Lizard_Repeated_Measurements)
 library(dplyr)
 library(forcats)
 Phrynosomatids <- filter(Lizard_Measurements,grepl('Sceloporus|Cophosaurus|Urosaurus|Uta|Uma|Callisaurus|Phrynosoma|Petrosaurus',Specimen))
+Phrynosomatids <- filter(Phrynosomatids,!grepl('Fossil',genus))
+Fossils <- filter(Lizard_Measurements,grepl('Fossil',genus))
 non_S.occident_phrynos <- filter(Phrynosomatids,!grepl('Sceloporus occidentalis',Specimen))
 Sceloporus_occidental <- filter(Phrynosomatids, grepl('Sceloporus occidentalis',Specimen))
 non_S.occidentalis.Scelop <- filter(non_S.occident_phrynos, grepl('Sceloporus',Specimen))
@@ -54,8 +56,10 @@ bones.lm<-function(variables,data){
   R<-(lapply(sum, function (x)x$adj.r.squared))
   P<-(lapply(sum, function (x)x$coefficients[2,4])) #may need to p.adjust
   MSE <- (lapply(sum, function (x)(mean(x$residuals^2))))
-  out<-list(m,b,R,P,MSE,models)
-  names(out)<-c("slope","Y-intercept","adj.R-squared","P-value","MSE","models")
+  Con <- (lapply(models, confint))
+  C<-(lapply(Con, function (x)x[2,]))
+  out<-list(m,b,R,P,MSE,models,C)
+  names(out)<-c("slope","Y-intercept","adj.R-squared","P-value","MSE","models","ConfidenceInt")
   out <- do.call(rbind, out)
   out <- t(out)
   out <- as.data.frame(out)
@@ -106,14 +110,16 @@ plot.alom.species<-function(variables,data){
   m<-(lapply(sum, function (x)x$coefficients[2]))
   R<-(lapply(sum, function (x)x$adj.r.squared))
   P<-(lapply(sum, function (x)x$coefficients[2,4])) #may need to p.adjust
-  out<-list(m,b,R,P,models)
-  names(out)<-c("slope","Y-intercept","adj.R-squared","P-value","models")
+  Con <- (lapply(models, confint))
+  C<-(lapply(Con, function (x)x[2,]))
+  out<-list(m,b,R,P,models,C)
+  names(out)<-c("slope","Y-intercept","adj.R-squared","P-value","models","ConfidenceInt")
   out <- do.call(rbind, out)
   out <- t(out)
   out <- as.data.frame(out)
   return(out)
 }
-cbPalette <- c("#D55E00")
+cbPalette <- c( "#630FB6","#D55E00")
 
 plot.alom.genus<-function(variables,data){
   require(ggplot2)
@@ -141,8 +147,10 @@ plot.alom.genus<-function(variables,data){
   m<-(lapply(sum, function (x)x$coefficients[2]))
   R<-(lapply(sum, function (x)x$adj.r.squared))
   P<-(lapply(sum, function (x)x$coefficients[2,4])) #may need to p.adjust
-  out<-list(m,b,R,P,models)
-  names(out)<-c("slope","Y-intercept","adj.R-squared","P-value","models")
+  Con <- (lapply(models, confint))
+  C<-(lapply(Con, function (x)x[2,]))
+  out<-list(m,b,R,P,models,C)
+  names(out)<-c("slope","Y-intercept","adj.R-squared","P-value","models","ConfidenceInt")
   out <- do.call(rbind, out)
   out <- t(out)
   out <- as.data.frame(out)
@@ -211,11 +219,22 @@ Phrynosomatids_alom <-plot.alom.genus(varlist,Phrynosomatids) #liner models of a
 
 #lm(Phrynosomatids) -predict> fossils------------
 
-Fossil_estimates <- estimate_SVL(Sceloporus_occidental_lm, non_S.occidentalis.Scelop)
-
-
-
+Fossil_estimates <- estimate_SVL(Phrynosomatids_lm, Fossils)
 library(Hmisc)
+Fossil_estimates<- llist(Fossil_estimates[c(1,5)])
+
+Fossil_estimates <- unlist(Fossil_estimates,recursive=FALSE)
+Fossil_estimates <- lapply(Fossil_estimates, data.frame, stringsAsFactors = FALSE)
+Fossil_estimates<-bind_cols(Fossil_estimates, .id = "column_label")
+
+library(dplyr)
+library(janitor)
+
+Fossil_estimates <- Fossil_estimates %>%
+  mutate_all(funs(na_if(., ""))) %>%
+  remove_empty("cols")
+
+
 #All the percent differences from estimates
 All_estimates<- llist(non.occi.sceloporus_estimates[c(4)],non_S.occident_phrynos_estimates[c(4)], non_Scelop_phrynos_estimates[c(4)], 
                       Sceloporus_occidental_estimates[c(4)], Sceloporus_occidental_estimates2[c(4)], Sceloporus_estimates[c(4)])
@@ -341,7 +360,7 @@ diff.all.summary <- lapply(diff.dfs, Diff.all.summ)
 
 # Adjusting lm p values using fdr---------------------------------
 lm.results <- llist(Sceloporus_lm[c(1:4)], non_Scelop_phrynos_lm[c(1:4)], non_S.occident_phrynos_lm[c(1:4)],
-                    non_S.occidentalis.Scelop_lm[c(1:4)], Sceloporus_occidental_lm[c(1:4)])
+                    non_S.occidentalis.Scelop_lm[c(1:4)], Sceloporus_occidental_lm[c(1:4)], Phrynosomatids_lm[c(1:4)])
 
 
 q.values <-lapply(lm.results, function(x){
@@ -356,13 +375,13 @@ lm.results <- lapply(lm.results, data.frame, stringsAsFactors = FALSE)
 lm.results <- lapply(lm.results, function(x) {tibble::rownames_to_column((data.frame(t(x))),"Measurement")})
 lm.results <- as.data.frame(lm.results)
 
-#write.table(lm.results, file = "lm.results", sep = ",", quote = FALSE, row.names = F)
-#write.table(q.values, file = "q.values", sep = ",", quote = FALSE, row.names = T)
+# write.table(lm.results, file = "lm.results", sep = ",", quote = FALSE, row.names = F)
+# write.table(q.values, file = "q.values", sep = ",", quote = FALSE, row.names = T)
 
 
 # Adjusting alom p values using fdr---------------------------------
-alom.results <- llist(Sceloporus_alom[c(1:4)], non_Scelop_phrynos_alom[c(1:4)], non_S.occident_phrynos_alom[c(1:4)],
-                    non_S.occidentalis.Scelop_alom[c(1:4)], Sceloporus_occidental_alom[c(1:4)])
+alom.results <- llist(Sceloporus_alom[c(1:4,6)], non_Scelop_phrynos_alom[c(1:4,6)], non_S.occident_phrynos_alom[c(1:4,6)],
+                    non_S.occidentalis.Scelop_alom[c(1:4,6)], Sceloporus_occidental_alom[c(1:4,6)])
 
 
 alom_q.values <-lapply(alom.results, function(x){
@@ -381,6 +400,7 @@ alom.results <- as.data.frame(alom.results)
 # write.table(alom_q.values, file = "alom_q.values", sep = ",", quote = FALSE, row.names = T)
 
 # Predicting SVL of NEW Sceloporus specimens------------------------------------------
+library(readr)
 New_Sceloporus_to_test_Sceloporus_to_test <- read_csv("New Sceloporus to test - Sceloporus to test.csv")
 New_Sceloporus_to_test_Sceloporus_to_test <- New_Sceloporus_to_test_Sceloporus_to_test %>%
   dplyr::rename(Specimen = Measurement,
@@ -391,13 +411,14 @@ New_Sceloporus_to_test_Sceloporus_to_test$genus <-gsub(" .*","", New_Sceloporus_
 
 NEWscelop.estimates <- estimate_SVL(Sceloporus_lm, New_Sceloporus_to_test_Sceloporus_to_test)
 
+NEWscelopALL.estimates <- estimate_SVL(Phrynosomatids_lm, New_Sceloporus_to_test_Sceloporus_to_test)
+
 
 NEW.Sceloporus_occidental <- filter(New_Sceloporus_to_test_Sceloporus_to_test, grepl('Sceloporus occidentalis',Specimen))
 NEWscelop.occidental.estimates <- estimate_SVL(Sceloporus_occidental_lm, NEW.Sceloporus_occidental)
 
 
-
-New.estimates <- llist(NEWscelop.occidental.estimates[c(4)], NEWscelop.estimates[c(4)])
+New.estimates <- llist(NEWscelop.occidental.estimates[c(4)], NEWscelop.estimates[c(4)], NEWscelopALL.estimates[c(4)])
 
 #Change All_estimates into a list of dataframes 
 New.estimates <- unlist(New.estimates,recursive=FALSE)
@@ -412,7 +433,7 @@ New.estimates <- lapply(New.estimates, ChangeType) # store the returned value to
 NEWdiff.all.summary <- lapply(New.estimates, Diff.summ)
 
 out <- do.call(rbind, NEWdiff.all.summary)
-#write.table(out, file = "%NEWdiff summary", sep = ",", quote = FALSE, row.names = T)
+# write.table(out, file = "%NEWdiff summary", sep = ",", quote = FALSE, row.names = T)
 
 
 # Measurement error--------------------------
