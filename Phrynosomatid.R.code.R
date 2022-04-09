@@ -20,6 +20,13 @@ non_S.occidentalis.Scelop <- filter(non_S.occident_phrynos, grepl('Sceloporus',S
 non_Scelop_phrynos <- filter(Phrynosomatids,!grepl('Sceloporus',Specimen))
 Sceloporus <- filter(Phrynosomatids,grepl('Sceloporus',Specimen))
 
+AvgSceloporus <-droplevels(Sceloporus)
+AvgSceloporus$species<-AvgSceloporus$species %>% fct_collapse('Sceloporus occidentalis' = c("Sceloporus occidentalis","Sceloporus occidentalis biseriatus"))
+AvgSceloporus$species<-AvgSceloporus$species %>% fct_collapse('Sceloporus graciosus' = c("Sceloporus graciosus","Sceloporus graciosus vandenburgianus"))
+levels(AvgSceloporus$species)
+AvgSceloporus <- AvgSceloporus %>% 
+  group_by(species) %>%
+  summarise(across(Maxilla_LDR:SVL, mean, na.rm = TRUE))
 
 Sceloporus_occidental$species<-Sceloporus_occidental$species %>% fct_collapse('Sceloporus occidentalis' = c("Sceloporus occidentalis","Sceloporus occidentalis biseriatus"))
 Sceloporus$species<-Sceloporus$species %>% fct_collapse('Sceloporus occidentalis' = c("Sceloporus occidentalis","Sceloporus occidentalis biseriatus"))
@@ -34,7 +41,7 @@ non_S.occidentalis.Scelop$species<-non_S.occidentalis.Scelop$species %>% fct_col
                                                                                "Sceloporus poinsetti" ,   "Sceloporus poinsettii"  , "Sceloporus undulatus"  , 
                                                                                "Sceloporus undulatus tristichus" ,  "Sceloporus virgatus" ))
 
-
+??fct_collapse
 # NEW Bones function TO CREATE LINEAR MODELS FOR PREDICTING SVL------------
 varlist <- names(Lizard_Measurements)[2:16] #all the different measurements
 
@@ -233,6 +240,8 @@ library(janitor)
 Fossil_estimates <- Fossil_estimates %>%
   mutate_all(funs(na_if(., ""))) %>%
   remove_empty("cols")
+
+# write.table(Fossil_estimates, file = "Fossil_estimates", sep = ",", quote = FALSE, row.names = T)
 
 
 #All the percent differences from estimates
