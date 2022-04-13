@@ -11,7 +11,7 @@ head(Lizard_Repeated_Measurements)
 #FILTERING THE DATA TO CREATE DATASETS ------------
 library(dplyr)
 library(forcats)
-Phrynosomatids <- filter(Lizard_Measurements,grepl('Sceloporus|Cophosaurus|Urosaurus|Uta|Uma|Callisaurus|Phrynosoma|Petrosaurus',Specimen))
+Phrynosomatids <- filter(Lizard_Measurements,grepl('Sceloporus|Holbrookia|Cophosaurus|Urosaurus|Uta|Uma|Callisaurus|Phrynosoma|Petrosaurus',Specimen))
 Phrynosomatids <- filter(Phrynosomatids,!grepl('Fossil',genus))
 Fossils <- filter(Lizard_Measurements,grepl('Fossil',genus))
 non_S.occident_phrynos <- filter(Phrynosomatids,!grepl('Sceloporus occidentalis',Specimen))
