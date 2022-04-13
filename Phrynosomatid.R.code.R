@@ -41,7 +41,7 @@ non_S.occidentalis.Scelop$species<-non_S.occidentalis.Scelop$species %>% fct_col
                                                                                "Sceloporus poinsetti" ,   "Sceloporus poinsettii"  , "Sceloporus undulatus"  , 
                                                                                "Sceloporus undulatus tristichus" ,  "Sceloporus virgatus" ))
 
-??fct_collapse
+
 # NEW Bones function TO CREATE LINEAR MODELS FOR PREDICTING SVL------------
 varlist <- names(Lizard_Measurements)[2:16] #all the different measurements
 
@@ -218,6 +218,9 @@ non_S.occident_phrynos_alom <-plot.alom.genus(varlist,non_S.occident_phrynos) #l
 #lm(non-S. occidentalis phrynosomatids) -predict> Sceloporus occidentalis------------
 
 Sceloporus_occidental_estimates2 <- estimate_SVL(non_S.occident_phrynos_lm, Sceloporus_occidental)
+
+## ALL LINEAR REGRESSION MODELS USING AVERAGE SCELOPORUS DATASET--------------------
+AvgSceloporus_lm <-bones.lm(varlist,AvgSceloporus) #liner models of all measurements
 
 ## ALL LINEAR REGRESSION MODELS USING ALL PHRYNOSOMATID DATASET--------------------
 Phrynosomatids_lm <-bones.lm(varlist,Phrynosomatids) #liner models of all measurements
@@ -422,12 +425,14 @@ NEWscelop.estimates <- estimate_SVL(Sceloporus_lm, New_Sceloporus_to_test_Scelop
 
 NEWscelopALL.estimates <- estimate_SVL(Phrynosomatids_lm, New_Sceloporus_to_test_Sceloporus_to_test)
 
+NEWscelopAvg.estimates <- estimate_SVL(AvgSceloporus_lm, New_Sceloporus_to_test_Sceloporus_to_test)
+
 
 NEW.Sceloporus_occidental <- filter(New_Sceloporus_to_test_Sceloporus_to_test, grepl('Sceloporus occidentalis',Specimen))
 NEWscelop.occidental.estimates <- estimate_SVL(Sceloporus_occidental_lm, NEW.Sceloporus_occidental)
 
 
-New.estimates <- llist(NEWscelop.occidental.estimates[c(4)], NEWscelop.estimates[c(4)], NEWscelopALL.estimates[c(4)])
+New.estimates <- llist(NEWscelop.occidental.estimates[c(4)], NEWscelop.estimates[c(4)], NEWscelopAvg.estimates[c(4)], NEWscelopALL.estimates[c(4)])
 
 #Change All_estimates into a list of dataframes 
 New.estimates <- unlist(New.estimates,recursive=FALSE)
