@@ -427,7 +427,8 @@ diff.all.summary <- lapply(diff.dfs, Diff.all.summ)
 
 
 # Adjusting lm p values using fdr---------------------------------
-lm.results <- llist(Sceloporus_occidental_lm[c(1:4)],non_S.occidentalis.Scelop_lm[c(1:4)],Sceloporus_lm[c(1:4)],
+lm.results <- llist(Sceloporus_occidental_lm[c(1:4)],non_S.occidentalis.Scelop_lm[c(1:4)],
+                    AvgSceloporus_lm[c(1:4)], Sceloporus_lm[c(1:4)],
                     Sceloporine_lm[c(1:4)], Phrynosomatine_lm[c(1:4)], non_S.occident_phrynos_lm[c(1:4)], 
                     non_Scelop_phrynos_lm[c(1:4)], Phrynosomatids_lm[c(1:4)])
 
@@ -448,9 +449,10 @@ lm.results <- as.data.frame(lm.results)
 
 
 # Adjusting alom p values using fdr---------------------------------
-alom.results <- llist(non.occi.sceloporus_estimates[c(1:4,6)],non_S.occident_phrynos_estimates[c(1:4,6)], non_Scelop_phrynos_estimates[c(1:4,6)], 
-                      Sceloporus_occidental_estimates[c(1:4,6)], Sceloporus_occidental_estimates2[c(1:4,6)], Sceloporine_estimates[c(1:4,6)], Phrynosomatine_estimates[c(1:4,6)],
-                      Sceloporus_estimates[c(1:4,6)], Phrynosomatid_estimates[c(1:4,6)] ,Phrynosomatid_estimates2[c(1:4,6)], Phrynosomatid_estimates3[c(1:4,6)])
+alom.results <- llist(Sceloporus_occidental_alom[c(1:4,6)],non_S.occidentalis.Scelop_alom[c(1:4,6)],
+                      Sceloporus_alom[c(1:4,6)],
+                      Sceloporine_alom[c(1:4,6)], Phrynosomatine_alom[c(1:4,6)], non_S.occident_phrynos_alom[c(1:4,6)], 
+                      non_Scelop_phrynos_alom[c(1:4,6)], Phrynosomatids_alom[c(1:4,6)])
 
 alom_q.values <-lapply(alom.results, function(x){
   q <- p.adjust(unlist(x[4]),method = "fdr")
