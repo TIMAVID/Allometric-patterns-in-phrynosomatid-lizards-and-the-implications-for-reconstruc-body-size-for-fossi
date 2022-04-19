@@ -53,12 +53,12 @@ Sceloporus$species<-Sceloporus$species %>% fct_collapse('Sceloporus occidentalis
 Sceloporus$species<-Sceloporus$species %>% fct_collapse('other Sceloporus' = c("Sceloporus graciosus","Sceloporus graciosus vandenburgianus","Sceloporus clarkii","Sceloporus graciosus","Sceloporus grammicus",   
                                                                                "Sceloporus jarrovii"  ,   "Sceloporus licki"    ,    "Sceloporus magister" ,   
                                                                                "Sceloporus olivaceous"  , "Sceloporus orcutti" ,    
-                                                                               "Sceloporus poinsetti" ,   "Sceloporus poinsettii"  , "Sceloporus undulatus"  , 
+                                                                                  "Sceloporus poinsettii"  , "Sceloporus undulatus"  , 
                                                                                "Sceloporus undulatus tristichus" ,  "Sceloporus virgatus" ))
 non_S.occidentalis.Scelop$species<-non_S.occidentalis.Scelop$species %>% fct_collapse('other Sceloporus' = c("Sceloporus graciosus","Sceloporus graciosus vandenburgianus","Sceloporus clarkii","Sceloporus graciosus","Sceloporus grammicus",   
                                                                                "Sceloporus jarrovii"  ,   "Sceloporus licki"    ,    "Sceloporus magister" ,   
                                                                                "Sceloporus olivaceous"  , "Sceloporus orcutti" ,    
-                                                                               "Sceloporus poinsetti" ,   "Sceloporus poinsettii"  , "Sceloporus undulatus"  , 
+                                                                                  "Sceloporus poinsettii"  , "Sceloporus undulatus"  , 
                                                                                "Sceloporus undulatus tristichus" ,  "Sceloporus virgatus" ))
 
 
@@ -119,7 +119,7 @@ plot.alom.species<-function(variables,data){
   figs<-lapply(variables, function(x) {
     ggplot(data = data,
            aes(log(SVL), log(get(x)))) + geom_point(aes(color=species))+
-      scale_colour_manual(values=cbPalette)+ggtitle(x)+
+      scale_colour_manual(values=cbPalette,breaks=c("Sceloporus occidentalis", "other Sceloporus"))+ggtitle(x)+
       theme_classic(base_size = 8)+ ylab("log(Measurement)")+
       geom_smooth(method='lm')+theme(legend.position="none")+ coord_fixed(ratio = 1)
     # +geom_abline(intercept=seq(-100, 100, 1),
@@ -146,7 +146,7 @@ plot.alom.species<-function(variables,data){
   out <- as.data.frame(out)
   return(out)
 }
-cbPalette <- c( "#630FB6","#D55E00")
+cbPalette <- c( "#6D0C96","#EFA134")
 
 plot.alom.genus<-function(variables,data){
   require(ggplot2)
@@ -154,7 +154,7 @@ plot.alom.genus<-function(variables,data){
   figs<-lapply(variables, function(x) {
     ggplot(data = data, 
            aes(log(SVL), log(get(x)))) + geom_point(aes(color=genus))+
-      scale_colour_manual(values=cbPalette2, breaks=c("Callisaurus", "Cophosaurus", "Petrosaurus", "Phrynosoma","Sceloporus","Uma","Urosaurus","Uta"))+
+      scale_colour_manual(values=cbPalette2, breaks=c("Callisaurus", "Cophosaurus", "Petrosaurus", "Phrynosoma","Sceloporus","Uma","Urosaurus","Uta", "Holbrookia"))+
       ggtitle(x)+
       theme_classic(base_size = 8)+ ylab("log(Measurement)")+
       geom_smooth(method='lm')+theme(legend.position="none")+ coord_fixed(ratio = 1)
@@ -183,7 +183,7 @@ plot.alom.genus<-function(variables,data){
   out <- as.data.frame(out)
   return(out)
 }
-cbPalette2 <- c("#999999", "#E69F00", "#56B4E9", "#009E73","#D55E00", "#F0E442", "#0072B2", "#CC79A7")
+cbPalette2 <- c("#D4185D", "#1174CA", "#FFC107", "#5A3E06","#EFA134", "#43B546", "#EF44D5", "#3CE4C8", "#ADADAD")
 
 
 ## ALL LINEAR REGRESSION MODELS USING S. OCCIDENTALIS DATASET--------------------
@@ -302,7 +302,7 @@ Fossil_estimates <- Fossil_estimates %>%
 # write.table(Fossil_estimates, file = "Fossil_estimates", sep = ",", quote = FALSE, row.names = T)
 
 
-#All the percent differences from estimates
+#All the percent differences from estimates-----------------------------
 All_estimates<- llist(non.occi.sceloporus_estimates[c(4)],non_S.occident_phrynos_estimates[c(4)], non_Scelop_phrynos_estimates[c(4)], 
                       Sceloporus_occidental_estimates[c(4)], Sceloporus_occidental_estimates2[c(4)], Sceloporine_estimates[c(4)], Phrynosomatine_estimates[c(4)],
                       Sceloporus_estimates[c(4)], Phrynosomatid_estimates[c(4)] ,Phrynosomatid_estimates2[c(4)], Phrynosomatid_estimates3[c(4)])
@@ -326,7 +326,7 @@ plot.percent.diff<-function(data){
     #+ylim(0, 50)
   }
   figs<-Map(f = ggBox, dfs, yo)
-  do.call(grid.arrange, c(figs, ncol=2, top = deparse(substitute(data))))
+  do.call(grid.arrange, c(figs, ncol=3, top = deparse(substitute(data))))
 }
 
 
@@ -360,28 +360,28 @@ diff.summary <- lapply(diff.dfs, Diff.summ)
 
 diff.summary <- do.call(rbind, diff.summary)
 
-#write.table(diff.summary, file = "diff summary", sep = ",", quote = FALSE, row.names = T)
+# write.table(diff.summary, file = "diff summary", sep = ",", quote = FALSE, row.names = T)
 
 
 #FUNCTION: to plot all the percent difference means-------------------------------
-plot.percent.diff.mean<-function(data){ 
-  yo<-names(data)
-  
-  ggBox <- function(x, name) {
-    ggplot(data = x, aes(x=Measurement, y=mean)) +
-      geom_point() + ggtitle(name)+
-      theme_classic()+ ylab("Mean % diff") +
-      scale_x_discrete(guide = guide_axis(n.dodge=3))+
-      geom_hline(yintercept=10)+
-      geom_hline(yintercept=15) +
-      geom_errorbar(width=.1, aes(ymin=mean, ymax=mean+sd)) 
-    #+ylim(0, 50)
-  }
-  figs<-Map(f = ggBox, data, yo)
-  do.call(grid.arrange, c(figs, ncol=2, top = deparse(substitute(data))))
-}
-
-plot.percent.diff.mean(diff.summary)
+# plot.percent.diff.mean<-function(data){ 
+#   yo<-names(data)
+#   
+#   ggBox <- function(x, name) {
+#     ggplot(data = x, aes(x=Measurement, y=mean)) +
+#       geom_point() + ggtitle(name)+
+#       theme_classic()+ ylab("Mean % diff") +
+#       scale_x_discrete(guide = guide_axis(n.dodge=3))+
+#       geom_hline(yintercept=10)+
+#       geom_hline(yintercept=15) +
+#       geom_errorbar(width=.1, aes(ymin=mean, ymax=mean+sd)) 
+#     #+ylim(0, 50)
+#   }
+#   figs<-Map(f = ggBox, data, yo)
+#   do.call(grid.arrange, c(figs, ncol=2, top = deparse(substitute(data))))
+# }
+# 
+# plot.percent.diff.mean(diff.summary)
 
 #FUNCTION: to plot all the differences with color-----------------------------
 plot.diff.color<-function(data){ 
@@ -427,9 +427,9 @@ diff.all.summary <- lapply(diff.dfs, Diff.all.summ)
 
 
 # Adjusting lm p values using fdr---------------------------------
-lm.results <- llist(non.occi.sceloporus_estimates[c(1:4)],non_S.occident_phrynos_estimates[c(1:4)], non_Scelop_phrynos_estimates[c(1:4)], 
-                    Sceloporus_occidental_estimates[c(1:4)], Sceloporus_occidental_estimates2[c(1:4)], Sceloporine_estimates[c(1:4)], Phrynosomatine_estimates[c(1:4)],
-                    Sceloporus_estimates[c(1:4)], Phrynosomatid_estimates[c(1:4)] ,Phrynosomatid_estimates2[c(1:4)], Phrynosomatid_estimates3[c(1:4)])
+lm.results <- llist(Sceloporus_occidental_lm[c(1:4)],non_S.occidentalis.Scelop_lm[c(1:4)],Sceloporus_lm[c(1:4)],
+                    Sceloporine_lm[c(1:4)], Phrynosomatine_lm[c(1:4)], non_S.occident_phrynos_lm[c(1:4)], 
+                    non_Scelop_phrynos_lm[c(1:4)], Phrynosomatids_lm[c(1:4)])
 
 q.values <-lapply(lm.results, function(x){
   q <- p.adjust(unlist(x[4]),method = "fdr")
