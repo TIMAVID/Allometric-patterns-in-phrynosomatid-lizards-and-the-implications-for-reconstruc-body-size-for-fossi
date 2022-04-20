@@ -538,12 +538,27 @@ Measure_error_TOTAL <- function(data){ #summaries the percent differences and re
     dplyr::summarise(across(Maxilla_LDR:Ilium_crest_GL, list(mean = mean, sd = sd, RSD = RSD)))
 }
 
-Repeat.meaures<- Measure_error_USER(Lizard_Repeated_Measurements)
-Repeat.meaures <-data.frame(t(Repeat.meaures))
+Repeat.meaures_USER<- Measure_error_USER(Lizard_Repeated_Measurements)
+Repeat.meaures_USER <-data.frame((Repeat.meaures_USER))
 
-#write.table(Repeat.meaures, file = "Repeat.meaures_USER", sep = ",", quote = FALSE, row.names = T)
+# write.table(Repeat.meaures_USER, file = "Repeat.meaures_USER", sep = ",", quote = FALSE, row.names = T)
 
 Repeat.meaures_TOTAL<- Measure_error_TOTAL(Lizard_Repeated_Measurements)
-Repeat.meaures_TOTAL <-data.frame(t(Repeat.meaures))
+Repeat.meaures_TOTAL <-data.frame(t(Repeat.meaures_TOTAL))
 
-#write.table(Repeat.meaures, file = "Repeat.meaures_TOTAL", sep = ",", quote = FALSE, row.names = T)
+# write.table(Repeat.meaures_TOTAL, file = "Repeat.meaures_TOTAL", sep = ",", quote = FALSE, row.names = T)
+
+Measure.errors <- data.frame (Specimen = c("Sceloporus magister TxVP M-9816", "Sceloporus jarrovii TxVP M-9813", "Sceloporus poinsettii TxVP M-9826", "Sceloporus tristichus TxVP M-9830", "Sceloporus virgatus TxVP M-12197"),
+                              SVL  = c(114, 98, 75, 58, 42),
+                              Mean.RSD = c(3.96, 5.76, 4.98, 6.27, 6.12)
+)
+
+cor.test(Measure.errors$SVL, Measure.errors$Mean.RSD, method = c("pearson"))
+
+library("ggpubr")
+ggscatter(Measure.errors, x = "SVL", y = "Mean.RSD", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "SVL", ylab = "Mean.RSD")
+
+
