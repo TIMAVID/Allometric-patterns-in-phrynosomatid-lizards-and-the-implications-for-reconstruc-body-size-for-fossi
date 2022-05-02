@@ -21,9 +21,16 @@ Phrynosomatid_test <- Phrynosomatids[split== 1, ]
 
 Fossils <- filter(Lizard_Measurements,grepl('Fossil',genus))
 non_S.occident_phrynos <- filter(Phrynosomatids,!grepl('Sceloporus occidentalis',Specimen))
+set.seed(123)
+split2<- sample(c(rep(0, 0.6 * nrow(non_S.occident_phrynos)), rep(1, 0.4 * nrow(non_S.occident_phrynos))))
+table(split2)
+non_S.occident_phrynos_train <- non_S.occident_phrynos[split2== 1, ]    
+
 Sceloporus_occidental <- filter(Phrynosomatids, grepl('Sceloporus occidentalis',Specimen))
 non_S.occidentalis.Scelop <- filter(non_S.occident_phrynos, grepl('Sceloporus',Specimen))
 non_Scelop_phrynos <- filter(Phrynosomatids,!grepl('Sceloporus',Specimen))
+
+
 Sceloporus <- filter(Phrynosomatids,grepl('Sceloporus',Specimen))
 
 Sceloporine <- filter(Phrynosomatids,grepl('Sceloporus|Uta|Urosaurus|Petrosaurus',Specimen))
@@ -39,6 +46,8 @@ split2<- sample(c(rep(0, 0.8 * nrow(Phrynosomatine)), rep(1, 0.2 * nrow(Phrynoso
 table(split2)
 Phrynosomatine_train <- Phrynosomatine[split2 == 0, ] 
 Phrynosomatine_test <- Phrynosomatine[split2== 1, ]    
+
+Cophosaurus_texanus <- filter(Phrynosomatids, grepl('Cophosaurus texanus',Specimen))
 
 AvgSceloporus <-droplevels(Sceloporus)
 AvgSceloporus$species<-AvgSceloporus$species %>% fct_collapse('Sceloporus occidentalis' = c("Sceloporus occidentalis","Sceloporus occidentalis biseriatus"))
@@ -183,7 +192,7 @@ plot.alom.genus<-function(variables,data){
   out <- as.data.frame(out)
   return(out)
 }
-cbPalette2 <- c("#D4185D", "#1174CA", "#FFC107", "#5A3E06","#EFA134", "#43B546", "#EF44D5", "#3CE4C8", "#ADADAD")
+cbPalette2 <- c("#D4185D", "#1174CA", "#FFF500", "#5A3E06","#EFA134", "#43B546", "#EF44D5", "#3CE4C8", "#ADADAD")
 
 
 ## ALL LINEAR REGRESSION MODELS USING S. OCCIDENTALIS DATASET--------------------
@@ -219,7 +228,6 @@ non_S.occidentalis.Scelop_alom <-plot.alom.species(varlist,non_S.occidentalis.Sc
 
 Sceloporus_occidental_estimates <- estimate_SVL(non_S.occidentalis.Scelop_lm, Sceloporus_occidental)
 
-
 ## ALL LINEAR REGRESSION MODELS USING Sceloporine DATASET--------------------
 Sceloporine_lm <-bones.lm(varlist,Sceloporine_train) #liner models of all measurements
 
@@ -246,8 +254,11 @@ Phrynosomatine_estimates <- estimate_SVL(Phrynosomatine_lm, Phrynosomatine_test)
 #lm(Phrynosomatines) -predict> subset Phrynosomatids
 
 Phrynosomatid_test2 <- rbind(Sceloporine_test, Phrynosomatine_test)
-Phrynosomatid_estimates2 <- estimate_SVL(Sceloporine_lm, Phrynosomatid_test2)
+Phrynosomatid_estimates2 <- estimate_SVL(Phrynosomatine_lm, Phrynosomatid_test2)
 
+
+## ALL LINEAR REGRESSION MODELS USING Cophosaurus_texanus DATASET--------------------
+Cophosaurus_texanus_alom <-plot.alom.species(varlist,Cophosaurus_texanus) #liner models of all measurements
 
 ## ALL LINEAR REGRESSION MODELS USING non-Sceloporus phrynosomatids DATASET--------------------
 non_Scelop_phrynos_lm <-bones.lm(varlist,non_Scelop_phrynos) #liner models of all measurements
@@ -262,11 +273,15 @@ Sceloporus_estimates <- estimate_SVL(non_Scelop_phrynos_lm, Sceloporus)
 ## ALL LINEAR REGRESSION MODELS USING non-S.occidentalis phrynosomatids DATASET--------------------
 non_S.occident_phrynos_lm <-bones.lm(varlist,non_S.occident_phrynos) #liner models of all measurements
 
+non_S.occident_phrynos_lm_sub <-bones.lm(varlist,non_S.occident_phrynos_train) #liner models of all measurements
+
 non_S.occident_phrynos_alom <-plot.alom.genus(varlist,non_S.occident_phrynos) #liner models of all measurements
 
 #lm(non-S. occidentalis phrynosomatids) -predict> Sceloporus occidentalis
 
 Sceloporus_occidental_estimates2 <- estimate_SVL(non_S.occident_phrynos_lm, Sceloporus_occidental)
+
+Sceloporus_occidental_estimates_sub <- estimate_SVL(non_S.occident_phrynos_lm_sub, Sceloporus_occidental)
 
 
 ## ALL LINEAR REGRESSION MODELS USING AVERAGE SCELOPORUS DATASET--------------------
@@ -304,7 +319,7 @@ Fossil_estimates <- Fossil_estimates %>%
 
 #All the percent differences from estimates-----------------------------
 All_estimates<- llist(non.occi.sceloporus_estimates[c(4)],non_S.occident_phrynos_estimates[c(4)], non_Scelop_phrynos_estimates[c(4)], 
-                      Sceloporus_occidental_estimates[c(4)], Sceloporus_occidental_estimates2[c(4)], Sceloporine_estimates[c(4)], Phrynosomatine_estimates[c(4)],
+                      Sceloporus_occidental_estimates[c(4)], Sceloporus_occidental_estimates2[c(4)],Sceloporus_occidental_estimates_sub[c(4)], Sceloporine_estimates[c(4)], Phrynosomatine_estimates[c(4)],
                       Sceloporus_estimates[c(4)], Phrynosomatid_estimates[c(4)] ,Phrynosomatid_estimates2[c(4)], Phrynosomatid_estimates3[c(4)])
 
 #FUNCTION: to plot all the percent differences-----------------------------
@@ -398,7 +413,7 @@ plot.diff.color<-function(data){
   ggBox <- function(x, name) {
     ggplot(data = x, aes(x=Measurement, y=value)) +
       geom_point(aes(color=Genus),position=position_jitter(width=.1,height=0)) + 
-      scale_colour_manual(values=cbPalette2, breaks=c("Callisaurus", "Cophosaurus", "Petrosaurus", "Phrynosoma","Sceloporus","Uma","Urosaurus","Uta"))+ ggtitle(name)+
+      scale_colour_manual(values=cbPalette2, breaks=c("Callisaurus", "Cophosaurus", "Petrosaurus", "Phrynosoma","Sceloporus","Uma","Urosaurus","Uta", "Holbrookia"))+ ggtitle(name)+
       ylab("Diff(Est.-Act.)") +
       scale_x_discrete(guide = guide_axis(angle = 90)) +
       theme_classic()
@@ -449,10 +464,12 @@ lm.results <- as.data.frame(lm.results)
 
 
 # Adjusting alom p values using fdr---------------------------------
-alom.results <- llist(Sceloporus_occidental_alom[c(1:4,6)],non_S.occidentalis.Scelop_alom[c(1:4,6)],
-                      Sceloporus_alom[c(1:4,6)],
-                      Sceloporine_alom[c(1:4,6)], Phrynosomatine_alom[c(1:4,6)], non_S.occident_phrynos_alom[c(1:4,6)], 
-                      non_Scelop_phrynos_alom[c(1:4,6)], Phrynosomatids_alom[c(1:4,6)])
+alom.results <- llist(Sceloporus_occidental_alom[c(1:4,6)],non_S.occidentalis.Scelop_alom[c(1:4,6)], Cophosaurus_texanus_alom[c(1:4,6)],
+                      #Sceloporus_alom[c(1:4,6)],
+                      Sceloporine_alom[c(1:4,6)], Phrynosomatine_alom[c(1:4,6)], 
+                      non_S.occident_phrynos_alom[c(1:4,6)]
+                      #,non_Scelop_phrynos_alom[c(1:4,6)], Phrynosomatids_alom[c(1:4,6)]
+                      )
 
 alom_q.values <-lapply(alom.results, function(x){
   q <- p.adjust(unlist(x[4]),method = "fdr")
@@ -529,13 +546,13 @@ RSD <- function(x){ #RELATIVE STANDARD DEVIATION
 Measure_error_USER <- function(data){ #summaries the percent differences and return mean and sd
   require(dplyr)
   dat<- data %>% group_by(Specimen,User) %>%
-    dplyr::summarise(across(Maxilla_LDR:Ilium_crest_GL, list(mean = mean, sd = sd, RSD = RSD)))
+    dplyr::summarise(across(Maxilla_LDR:SVL, list(mean = mean, sd = sd, RSD = RSD)))
 }
 
 Measure_error_TOTAL <- function(data){ #summaries the percent differences and return mean and sd
   require(dplyr)
   dat<- data %>% group_by(Specimen) %>%
-    dplyr::summarise(across(Maxilla_LDR:Ilium_crest_GL, list(mean = mean, sd = sd, RSD = RSD)))
+    dplyr::summarise(across(Maxilla_LDR:SVL, list(mean = mean, sd = sd, RSD = RSD)))
 }
 
 Repeat.meaures_USER<- Measure_error_USER(Lizard_Repeated_Measurements)
@@ -543,22 +560,46 @@ Repeat.meaures_USER <-data.frame((Repeat.meaures_USER))
 
 # write.table(Repeat.meaures_USER, file = "Repeat.meaures_USER", sep = ",", quote = FALSE, row.names = T)
 
+library(tidyr)
+library(tidyverse)
+library(broom)
+library(fs)
+library(lubridate)
+
 Repeat.meaures_TOTAL<- Measure_error_TOTAL(Lizard_Repeated_Measurements)
-Repeat.meaures_TOTAL <-data.frame(t(Repeat.meaures_TOTAL))
+data_long <- gather(Repeat.meaures_USER, measurement, value, Maxilla_LDR_mean:Ilium_crest_GL_RSD, factor_key=TRUE)
+data_long <- select(data_long, -SVL_sd, -SVL_RSD)
+data_long <- filter(data_long,grepl('RSD',measurement)) %>% filter(!is.na(value))
+data_long$measurement <- droplevels(data_long$measurement)
+
+data_nest = data_long %>% group_by(measurement,User) %>% nest()
+
+cor_fun <- function(df) cor.test(df$value, df$SVL_mean, method = "pearson") %>% tidy()
+
+data_nest <- mutate(data_nest, model = map(data, cor_fun))
+head(data_nest)
+corr_pr <- select(data_nest, -data) %>% unnest()
+
+corr_pr <- mutate(corr_pr, sig = ifelse(p.value <0.05, "Sig.", "Non Sig."))
+
+
+
+library(psych)
+gp.cor <- data_long %>%
+  split(.$measurement) %>%  
+  map(~corr.test(x = .x %>% select(SVL_mean, value),
+                 use = "everything",
+                 method = "pearson",
+                 adjust = "none",
+                 alpha = 0.05,
+                 ci = TRUE, minlength = 5)
+  )
+map(gp.cor, ~.x$r)
+
+
+# Repeat.meaures_TOTAL <-data.frame(t(Repeat.meaures_TOTAL))
 
 # write.table(Repeat.meaures_TOTAL, file = "Repeat.meaures_TOTAL", sep = ",", quote = FALSE, row.names = T)
 
-Measure.errors <- data.frame (Specimen = c("Sceloporus magister TxVP M-9816", "Sceloporus jarrovii TxVP M-9813", "Sceloporus poinsettii TxVP M-9826", "Sceloporus tristichus TxVP M-9830", "Sceloporus virgatus TxVP M-12197"),
-                              SVL  = c(114, 98, 75, 58, 42),
-                              Mean.RSD = c(3.96, 5.76, 4.98, 6.27, 6.12)
-)
-
-cor.test(Measure.errors$SVL, Measure.errors$Mean.RSD, method = c("pearson"))
-
-library("ggpubr")
-ggscatter(Measure.errors, x = "SVL", y = "Mean.RSD", 
-          add = "reg.line", conf.int = TRUE, 
-          cor.coef = TRUE, cor.method = "pearson",
-          xlab = "SVL", ylab = "Mean.RSD")
 
 
