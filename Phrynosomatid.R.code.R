@@ -487,12 +487,15 @@ alom.results <- as.data.frame(alom.results)
 # write.table(alom_q.values, file = "alom_q.values", sep = ",", quote = FALSE, row.names = T)
 
 # Predicting SVL of NEW Sceloporus specimens------------------------------------------
-library(readr)
-New_Sceloporus_to_test_Sceloporus_to_test <- read_csv("New Sceloporus to test - Sceloporus to test.csv")
+f4 <- curl("https://raw.githubusercontent.com/TIMAVID/Allometric-patterns-in-phrynosomatid-lizards-and-the-implications-for-reconstruc-body-size-for-fossi/master/New%20Sceloporus%20to%20test%20-%20Sceloporus%20to%20test.csv")
+New_Sceloporus_to_test_Sceloporus_to_test <- read.csv(f4, header = TRUE, sep = ",", stringsAsFactors = TRUE) # this is a matrix of repeatedly measured specimens  
+head(New_Sceloporus_to_test_Sceloporus_to_test)
+
+
 New_Sceloporus_to_test_Sceloporus_to_test <- New_Sceloporus_to_test_Sceloporus_to_test %>%
   dplyr::rename(Specimen = Measurement,
-                'Occipital_complex_WC' = 'Occipital complex_WC',
-                'Ilium_crest_GL' = 'Ilium crest_GL')
+                'Occipital_complex_WC' = 'Occipital.complex_WC',
+                'Ilium_crest_GL' = 'Ilium.crest_GL')
 New_Sceloporus_to_test_Sceloporus_to_test$species <-gsub("_.*","", New_Sceloporus_to_test_Sceloporus_to_test$Specimen) #makes species column
 New_Sceloporus_to_test_Sceloporus_to_test$genus <-gsub(" .*","", New_Sceloporus_to_test_Sceloporus_to_test$Specimen) #makes species column
 
