@@ -4,7 +4,7 @@ f2 <- curl("https://raw.githubusercontent.com/TIMAVID/The-utility-of-evolutionar
 Lizard_Measurements <- read.csv(f2, header = TRUE, sep = ",", stringsAsFactors = TRUE) # this is a matrix of measured specimens 
 head(Lizard_Measurements)
 
-f3 <- curl("https://raw.githubusercontent.com/TIMAVID/The-utility-of-evolutionary-allometries-in-estimating-body-sizes-of-phrynosomatid-lizards/master/Sceloporus_Repeated_Measurements.csv")
+f3 <- curl("https://raw.githubusercontent.com/TIMAVID/Allometric-patterns-in-phrynosomatid-lizards-and-the-implications-for-reconstruc-body-size-for-fossi/master/Lizard%20Repeated%20Measurements.csv")
 Lizard_Repeated_Measurements <- read.csv(f3, header = TRUE, sep = ",", stringsAsFactors = TRUE) # this is a matrix of repeatedly measured specimens  
 head(Lizard_Repeated_Measurements)
 
